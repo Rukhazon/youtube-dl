@@ -71,7 +71,7 @@ class FragmentFD(FileDownloader):
 
     @staticmethod
     def __do_ytdl_file(ctx):
-        return not ctx['live'] and not ctx['tmpfilename'] == '-'
+        return not ctx['live'] and ctx['tmpfilename'] != '-'
 
     def _read_ytdl_file(self, ctx):
         assert 'ytdl_corrupt' not in ctx
@@ -128,8 +128,7 @@ class FragmentFD(FileDownloader):
             ctx['live'] = False
         if not ctx['live']:
             total_frags_str = '%d' % ctx['total_frags']
-            ad_frags = ctx.get('ad_frags', 0)
-            if ad_frags:
+            if ad_frags := ctx.get('ad_frags', 0):
                 total_frags_str += ' (not including %d ad)' % ad_frags
         else:
             total_frags_str = 'unknown (live)'
@@ -262,8 +261,7 @@ class FragmentFD(FileDownloader):
         else:
             self.try_rename(ctx['tmpfilename'], ctx['filename'])
             if self.params.get('updatetime', True):
-                filetime = ctx.get('fragment_filetime')
-                if filetime:
+                if filetime := ctx.get('fragment_filetime'):
                     try:
                         os.utime(ctx['filename'], (time.time(), filetime))
                     except Exception:

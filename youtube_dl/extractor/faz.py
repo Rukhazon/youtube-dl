@@ -61,8 +61,7 @@ class FazIE(InfoExtractor):
         for pref, code in enumerate(['LOW', 'HIGH', 'HQ']):
             encoding = xpath_element(encodings, code)
             if encoding is not None:
-                encoding_url = xpath_text(encoding, 'FILENAME')
-                if encoding_url:
+                if encoding_url := xpath_text(encoding, 'FILENAME'):
                     tbr = xpath_text(encoding, 'AVERAGEBITRATE', 1000)
                     if tbr:
                         tbr = int_or_none(tbr.replace(',', '.'))
@@ -73,8 +72,7 @@ class FazIE(InfoExtractor):
                         'tbr': tbr,
                         'vcodec': xpath_text(encoding, 'CODEC'),
                     }
-                    mobj = re.search(r'(\d+)x(\d+)_(\d+)\.mp4', encoding_url)
-                    if mobj:
+                    if mobj := re.search(r'(\d+)x(\d+)_(\d+)\.mp4', encoding_url):
                         f.update({
                             'width': int(mobj.group(1)),
                             'height': int(mobj.group(2)),

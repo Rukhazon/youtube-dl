@@ -116,8 +116,9 @@ class DVTVIE(InfoExtractor):
         data = self._parse_json(js, video_id, transform_source=js_to_json)
         title = unescapeHTML(data['title'])
 
-        live_starter = try_get(data, lambda x: x['plugins']['liveStarter'], dict)
-        if live_starter:
+        if live_starter := try_get(
+            data, lambda x: x['plugins']['liveStarter'], dict
+        ):
             data.update(live_starter)
 
         formats = []
@@ -140,9 +141,7 @@ class DVTVIE(InfoExtractor):
                     height = self._search_regex(
                         r'^(\d+)[pP]', label or '', 'height', default=None)
                     format_id = ['http']
-                    for f in (ext, label):
-                        if f:
-                            format_id.append(f)
+                    format_id.extend(f for f in (ext, label) if f)
                     formats.append({
                         'url': video_url,
                         'format_id': '-'.join(format_id),
@@ -166,16 +165,14 @@ class DVTVIE(InfoExtractor):
         timestamp = parse_iso8601(self._html_search_meta(
             'article:published_time', webpage, 'published time', default=None))
 
-        items = re.findall(r'(?s)playlist\.push\(({.+?})\);', webpage)
-        if items:
+        if items := re.findall(r'(?s)playlist\.push\(({.+?})\);', webpage):
             return self.playlist_result(
                 [self._parse_video_metadata(i, video_id, timestamp) for i in items],
                 video_id, self._html_search_meta('twitter:title', webpage))
 
-        item = self._search_regex(
-            r'(?s)BBXPlayer\.setup\((.+?)\);',
-            webpage, 'video', default=None)
-        if item:
+        if item := self._search_regex(
+            r'(?s)BBXPlayer\.setup\((.+?)\);', webpage, 'video', default=None
+        ):
             # remove function calls (ex. htmldeentitize)
             # TODO this should be fixed in a general way in the js_to_json
             item = re.sub(r'\w+?\((.+)\)', r'\1', item)

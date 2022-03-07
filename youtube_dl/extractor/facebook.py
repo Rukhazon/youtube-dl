@@ -298,17 +298,26 @@ class FacebookIE(InfoExtractor):
 
     @staticmethod
     def _extract_urls(webpage):
-        urls = []
-        for mobj in re.finditer(
+        urls = [
+            mobj.group('url')
+            for mobj in re.finditer(
                 r'<iframe[^>]+?src=(["\'])(?P<url>https?://www\.facebook\.com/(?:video/embed|plugins/video\.php).+?)\1',
-                webpage):
-            urls.append(mobj.group('url'))
+                webpage,
+            )
+        ]
+
         # Facebook API embed
         # see https://developers.facebook.com/docs/plugins/embedded-video-player
-        for mobj in re.finditer(r'''(?x)<div[^>]+
+        urls.extend(
+            mobj.group('url')
+            for mobj in re.finditer(
+                r'''(?x)<div[^>]+
                 class=(?P<q1>[\'"])[^\'"]*\bfb-(?:video|post)\b[^\'"]*(?P=q1)[^>]+
-                data-href=(?P<q2>[\'"])(?P<url>(?:https?:)?//(?:www\.)?facebook.com/.+?)(?P=q2)''', webpage):
-            urls.append(mobj.group('url'))
+                data-href=(?P<q2>[\'"])(?P<url>(?:https?:)?//(?:www\.)?facebook.com/.+?)(?P=q2)''',
+                webpage,
+            )
+        )
+
         return urls
 
     def _login(self):
@@ -343,10 +352,13 @@ class FacebookIE(InfoExtractor):
             login_results = self._download_webpage(request, None,
                                                    note='Logging in', errnote='unable to fetch login page')
             if re.search(r'<form(.*)name="login"(.*)</form>', login_results) is not None:
-                error = self._html_search_regex(
+                if error := self._html_search_regex(
                     r'(?s)<div[^>]+class=(["\']).*?login_error_box.*?\1[^>]*><div[^>]*>.*?</div><div[^>]*>(?P<error>.+?)</div>',
-                    login_results, 'login error', default=None, group='error')
-                if error:
+                    login_results,
+                    'login error',
+                    default=None,
+                    group='error',
+                ):
                     raise ExtractorError('Unable to login: %s' % error, expected=True)
                 self._downloader.report_warning('unable to log in: bad username/password, or exceeded login rate limit (~3/min). Check credentials or wait.')
                 return
@@ -405,8 +417,7 @@ class FacebookIE(InfoExtractor):
                     js_data, lambda x: x['jsmods']['instances'], list) or [])
 
         def extract_dash_manifest(video, formats):
-            dash_manifest = video.get('dash_manifest')
-            if dash_manifest:
+            if dash_manifest := video.get('dash_manifest'):
                 formats.extend(self._parse_mpd_formats(
                     compat_etree_fromstring(compat_urllib_parse_unquote_plus(dash_manifest))))
 
@@ -446,7 +457,7 @@ class FacebookIE(InfoExtractor):
                     formats = []
                     q = qualities(['sd', 'hd'])
                     for (suffix, format_id) in [('', 'sd'), ('_quality_hd', 'hd')]:
-                        playable_url = video.get('playable_url' + suffix)
+                        playable_url = video.get(f'playable_url{suffix}')
                         if not playable_url:
                             continue
                         formats.append({
@@ -466,8 +477,7 @@ class FacebookIE(InfoExtractor):
                         'duration': float_or_none(video.get('playable_duration_in_ms'), 1000),
                     }
                     description = try_get(video, lambda x: x['savable_description']['text'])
-                    title = video.get('name')
-                    if title:
+                    if title := video.get('name'):
                         info.update({
                             'title': title,
                             'description': description,

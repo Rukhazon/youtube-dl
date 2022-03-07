@@ -166,23 +166,29 @@ class DPlayIE(InfoExtractor):
         raise ExtractorError(info['errors'][0]['detail'], expected=True)
 
     def _update_disco_api_headers(self, headers, disco_base, display_id, realm):
-        headers['Authorization'] = 'Bearer ' + self._download_json(
-            disco_base + 'token', display_id, 'Downloading token',
-            query={
-                'realm': realm,
-            })['data']['attributes']['token']
+        headers['Authorization'] = (
+            'Bearer '
+            + self._download_json(
+                f'{disco_base}token',
+                display_id,
+                'Downloading token',
+                query={
+                    'realm': realm,
+                },
+            )['data']['attributes']['token']
+        )
 
     def _download_video_playback_info(self, disco_base, video_id, headers):
         streaming = self._download_json(
-            disco_base + 'playback/videoPlaybackInfo/' + video_id,
-            video_id, headers=headers)['data']['attributes']['streaming']
-        streaming_list = []
-        for format_id, format_dict in streaming.items():
-            streaming_list.append({
+            f'{disco_base}playback/videoPlaybackInfo/{video_id}',
+            video_id,
+            headers=headers,
+        )['data']['attributes']['streaming']
+
+        return [{
                 'type': format_id,
                 'url': format_dict.get('url'),
-            })
-        return streaming_list
+            } for format_id, format_dict in streaming.items()]
 
     def _get_disco_api_info(self, url, display_id, disco_host, realm, country):
         geo_countries = [country.upper()]
@@ -196,15 +202,19 @@ class DPlayIE(InfoExtractor):
         self._update_disco_api_headers(headers, disco_base, display_id, realm)
         try:
             video = self._download_json(
-                disco_base + 'content/videos/' + display_id, display_id,
-                headers=headers, query={
+                f'{disco_base}content/videos/{display_id}',
+                display_id,
+                headers=headers,
+                query={
                     'fields[channel]': 'name',
                     'fields[image]': 'height,src,width',
                     'fields[show]': 'name',
                     'fields[tag]': 'name',
                     'fields[video]': 'description,episodeNumber,name,publishStart,seasonNumber,videoDuration',
-                    'include': 'images,primaryChannel,show,tags'
-                })
+                    'include': 'images,primaryChannel,show,tags',
+                },
+            )
+
         except ExtractorError as e:
             if isinstance(e.cause, compat_HTTPError) and e.cause.code == 400:
                 self._process_errors(e, geo_countries)
@@ -256,8 +266,7 @@ class DPlayIE(InfoExtractor):
                 if e_type == 'channel':
                     creator = attributes.get('name')
                 elif e_type == 'image':
-                    src = attributes.get('src')
-                    if src:
+                    if src := attributes.get('src'):
                         thumbnails.append({
                             'url': src,
                             'width': int_or_none(attributes.get('width')),
@@ -266,8 +275,7 @@ class DPlayIE(InfoExtractor):
                 if e_type == 'show':
                     series = attributes.get('name')
                 elif e_type == 'tag':
-                    name = attributes.get('name')
-                    if name:
+                    if name := attributes.get('name'):
                         tags.append(name)
 
         return {
@@ -291,9 +299,10 @@ class DPlayIE(InfoExtractor):
         display_id = mobj.group('id')
         domain = mobj.group('domain').lstrip('www.')
         country = mobj.group('country') or mobj.group('subdomain_country') or mobj.group('plus_country')
-        host = 'disco-api.' + domain if domain[0] == 'd' else 'eu2-prod.disco-api.com'
+        host = f'disco-api.{domain}' if domain[0] == 'd' else 'eu2-prod.disco-api.com'
         return self._get_disco_api_info(
-            url, display_id, host, 'dplay' + country, country)
+            url, display_id, host, f'dplay{country}', country
+        )
 
 
 class DiscoveryPlusIE(DPlayIE):
@@ -322,17 +331,22 @@ class DiscoveryPlusIE(DPlayIE):
 
     def _download_video_playback_info(self, disco_base, video_id, headers):
         return self._download_json(
-            disco_base + 'playback/v3/videoPlaybackInfo',
-            video_id, headers=headers, data=json.dumps({
-                'deviceInfo': {
-                    'adBlocker': False,
-                },
-                'videoId': video_id,
-                'wisteriaProperties': {
-                    'platform': 'desktop',
-                    'product': 'dplus_us',
-                },
-            }).encode('utf-8'))['data']['attributes']['streaming']
+            f'{disco_base}playback/v3/videoPlaybackInfo',
+            video_id,
+            headers=headers,
+            data=json.dumps(
+                {
+                    'deviceInfo': {
+                        'adBlocker': False,
+                    },
+                    'videoId': video_id,
+                    'wisteriaProperties': {
+                        'platform': 'desktop',
+                        'product': 'dplus_us',
+                    },
+                }
+            ).encode('utf-8'),
+        )['data']['attributes']['streaming']
 
     def _real_extract(self, url):
         display_id = self._match_id(url)

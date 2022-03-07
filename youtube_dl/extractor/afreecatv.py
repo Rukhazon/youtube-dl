@@ -169,8 +169,7 @@ class AfreecaTVIE(InfoExtractor):
     @staticmethod
     def parse_video_key(key):
         video_key = {}
-        m = re.match(r'^(?P<upload_date>\d{8})_\w+_(?P<part>\d+)$', key)
-        if m:
+        if m := re.match(r'^(?P<upload_date>\d{8})_\w+_(?P<part>\d+)$', key):
             video_key['upload_date'] = m.group('upload_date')
             video_key['part'] = int(m.group('part'))
         return video_key
@@ -312,7 +311,7 @@ class AfreecaTVIE(InfoExtractor):
                 upload_date = self._search_regex(
                     r'^(\d{8})_', key, 'upload date', default=None)
                 file_duration = int_or_none(file_element.get('duration'))
-                format_id = key if key else '%s_%s' % (video_id, file_num)
+                format_id = key or '%s_%s' % (video_id, file_num)
                 if determine_ext(file_url) == 'm3u8':
                     formats = self._extract_m3u8_formats(
                         file_url, video_id, 'mp4', entry_protocol='m3u8_native',
@@ -357,11 +356,14 @@ class AfreecaTVIE(InfoExtractor):
                 m3u8_id='hls')
         else:
             app, playpath = video_url.split('mp4:')
-            info.update({
-                'url': app,
-                'ext': 'flv',
-                'play_path': 'mp4:' + playpath,
-                'rtmp_live': True,  # downloading won't end without this
-            })
+            info.update(
+                {
+                    'url': app,
+                    'ext': 'flv',
+                    'play_path': f'mp4:{playpath}',
+                    'rtmp_live': True,
+                }
+            )
+
 
         return info

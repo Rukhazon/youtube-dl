@@ -319,8 +319,9 @@ class DRTVLiveIE(InfoExtractor):
     def _real_extract(self, url):
         channel_id = self._match_id(url)
         channel_data = self._download_json(
-            'https://www.dr.dk/mu-online/api/1.0/channel/' + channel_id,
-            channel_id)
+            f'https://www.dr.dk/mu-online/api/1.0/channel/{channel_id}', channel_id
+        )
+
         title = self._live_title(channel_data['Title'])
 
         formats = []

@@ -44,7 +44,7 @@ class CrunchyrollBaseIE(InfoExtractor):
 
     def _call_rpc_api(self, method, video_id, note=None, data=None):
         data = data or {}
-        data['req'] = 'RpcApi' + method
+        data['req'] = f'RpcApi{method}'
         data = compat_urllib_parse_urlencode(data).encode('utf-8')
         return self._download_xml(
             'https://www.crunchyroll.com/xml/',
@@ -283,8 +283,7 @@ class CrunchyrollIE(CrunchyrollBaseIE, VRVIE):
 
         def obfuscate_key_aux(count, modulo, start):
             output = list(start)
-            for _ in range(count):
-                output.append(output[-1] + output[-2])
+            output.extend(output[-1] + output[-2] for _ in range(count))
             # cut off start values
             output = output[2:]
             output = list(map(lambda x: x % modulo + 33, output))
@@ -319,10 +318,7 @@ class CrunchyrollIE(CrunchyrollBaseIE, VRVIE):
         output = ''
 
         def ass_bool(strvalue):
-            assvalue = '0'
-            if strvalue == '1':
-                assvalue = '-1'
-            return assvalue
+            return '-1' if strvalue == '1' else '0'
 
         output = '[Script Info]\n'
         output += 'Title: %s\n' % sub_root.attrib['title']
@@ -393,10 +389,14 @@ Format: Layer, Start, End, Style, Name, MarginL, MarginR, MarginV, Effect, Text
         subtitles = {}
         for sub_id, sub_name in re.findall(r'\bssid=([0-9]+)"[^>]+?\btitle="([^"]+)', webpage):
             sub_doc = self._call_rpc_api(
-                'Subtitle_GetXml', video_id,
-                'Downloading subtitles for ' + sub_name, data={
+                'Subtitle_GetXml',
+                video_id,
+                f'Downloading subtitles for {sub_name}',
+                data={
                     'subtitle_script_id': sub_id,
-                })
+                },
+            )
+
             if not isinstance(sub_doc, compat_etree_Element):
                 continue
             sid = sub_doc.get('id')
@@ -424,14 +424,18 @@ Format: Layer, Start, End, Style, Name, MarginL, MarginR, MarginV, Effect, Text
         webpage = self._download_webpage(
             self._add_skip_wall(webpage_url), video_id,
             headers=self.geo_verification_headers())
-        note_m = self._html_search_regex(
+        if note_m := self._html_search_regex(
             r'<div class="showmedia-trailer-notice">(.+?)</div>',
-            webpage, 'trailer-notice', default='')
-        if note_m:
+            webpage,
+            'trailer-notice',
+            default='',
+        ):
             raise ExtractorError(note_m)
 
-        mobj = re.search(r'Page\.messaging_box_controller\.addItems\(\[(?P<msg>{.+?})\]\)', webpage)
-        if mobj:
+        if mobj := re.search(
+            r'Page\.messaging_box_controller\.addItems\(\[(?P<msg>{.+?})\]\)',
+            webpage,
+        ):
             msg = json.loads(mobj.group('msg'))
             if msg.get('type') == 'error':
                 raise ExtractorError('crunchyroll returned error: %s' % msg['message_body'], expected=True)
@@ -502,7 +506,7 @@ Format: Layer, Start, End, Style, Name, MarginL, MarginR, MarginV, Effect, Text
 
             for fmt in available_fmts:
                 stream_quality, stream_format = self._FORMAT_IDS[fmt]
-                video_format = fmt + 'p'
+                video_format = f'{fmt}p'
                 stream_infos = []
                 streamdata = self._call_rpc_api(
                     'VideoPlayer_GetStandardConfig', video_id,
@@ -557,19 +561,25 @@ Format: Layer, Start, End, Style, Name, MarginL, MarginR, MarginV, Effect, Text
                             netloc='v.lvlt.crcdn.net',
                             path='%s/%s' % (remove_end(parsed_video_url.path, '/'), video_file.split(':')[-1])))
                         if self._is_valid_url(direct_video_url, video_id, video_format):
-                            format_info.update({
-                                'format_id': 'http-' + video_format,
-                                'url': direct_video_url,
-                            })
+                            format_info.update(
+                                {
+                                    'format_id': f'http-{video_format}',
+                                    'url': direct_video_url,
+                                }
+                            )
+
                             formats.append(format_info)
                             continue
 
-                    format_info.update({
-                        'format_id': 'rtmp-' + video_format,
-                        'url': video_url,
-                        'play_path': video_file,
-                        'ext': 'flv',
-                    })
+                    format_info.update(
+                        {
+                            'format_id': f'rtmp-{video_format}',
+                            'url': video_url,
+                            'play_path': video_file,
+                            'ext': 'flv',
+                        }
+                    )
+
                     formats.append(format_info)
         self._sort_formats(formats, ('preference', 'language_preference', 'height', 'width', 'tbr', 'fps'))
 
@@ -673,9 +683,12 @@ class CrunchyrollShowPlaylistIE(CrunchyrollBaseIE):
             r'(?s)<li id="showview_videos_media_(\d+)"[^>]+>.*?<a href="([^"]+)"',
             webpage)
         entries = [
-            self.url_result('http://www.crunchyroll.com' + ep, 'Crunchyroll', ep_id)
+            self.url_result(
+                f'http://www.crunchyroll.com{ep}', 'Crunchyroll', ep_id
+            )
             for ep_id, ep in episode_paths
         ]
+
         entries.reverse()
 
         return {

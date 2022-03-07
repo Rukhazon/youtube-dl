@@ -114,11 +114,7 @@ class DisneyIE(InfoExtractor):
                 m3u8_formats = self._extract_m3u8_formats(
                     flavor_url, video_id, 'mp4',
                     m3u8_id=flavor_format, fatal=False)
-                for f in m3u8_formats:
-                    # Apple FairPlay
-                    if '/fpshls/' in f['url']:
-                        continue
-                    formats.append(f)
+                formats.extend(f for f in m3u8_formats if '/fpshls/' not in f['url'])
                 continue
             format_id = []
             if flavor_format:

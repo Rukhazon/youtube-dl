@@ -185,8 +185,7 @@ class Aria2cFD(ExternalFD):
         cmd = [self.exe, '-c']
         cmd += self._configuration_args([
             '--min-split-size', '1M', '--max-connection-per-server', '4'])
-        dn = os.path.dirname(tmpfilename)
-        if dn:
+        if dn := os.path.dirname(tmpfilename):
             cmd += ['--dir', dn]
         cmd += ['--out', os.path.basename(tmpfilename)]
         for key, val in info_dict['http_headers'].items():
@@ -262,8 +261,7 @@ class FFmpegFD(ExternalFD):
                 ''.join('%s: %s\r\n' % (key, val) for key, val in headers.items())]
 
         env = None
-        proxy = self.params.get('proxy')
-        if proxy:
+        if proxy := self.params.get('proxy'):
             if not re.match(r'^[\da-zA-Z]+://', proxy):
                 proxy = 'http://%s' % proxy
 
@@ -352,11 +350,8 @@ class AVconvFD(FFmpegFD):
     pass
 
 
-_BY_NAME = dict(
-    (klass.get_basename(), klass)
-    for name, klass in globals().items()
-    if name.endswith('FD') and name != 'ExternalFD'
-)
+_BY_NAME = {klass.get_basename(): klass for name, klass in globals().items()
+    if name.endswith('FD') and name != 'ExternalFD'}
 
 
 def list_external_downloaders():

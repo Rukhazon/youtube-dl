@@ -38,9 +38,15 @@ class DFBIE(InfoExtractor):
             token_el = stream_access_info.find('token')
             manifest_url = token_el.attrib['url'] + '?' + 'hdnea=' + token_el.attrib['auth']
             if '.f4m' in manifest_url:
-                formats.extend(self._extract_f4m_formats(
-                    manifest_url + '&hdcore=3.2.0',
-                    display_id, f4m_id='hds', fatal=False))
+                formats.extend(
+                    self._extract_f4m_formats(
+                        f'{manifest_url}&hdcore=3.2.0',
+                        display_id,
+                        f4m_id='hds',
+                        fatal=False,
+                    )
+                )
+
             else:
                 formats.extend(self._extract_m3u8_formats(
                     manifest_url, display_id, 'mp4',

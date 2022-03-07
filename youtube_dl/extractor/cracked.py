@@ -42,8 +42,7 @@ class CrackedIE(InfoExtractor):
 
         webpage = self._download_webpage(url, video_id)
 
-        youtube_url = YoutubeIE._extract_url(webpage)
-        if youtube_url:
+        if youtube_url := YoutubeIE._extract_url(webpage):
             return self.url_result(youtube_url, ie=YoutubeIE.ie_key())
 
         video_url = self._html_search_regex(
@@ -70,8 +69,7 @@ class CrackedIE(InfoExtractor):
             r'<span\s+id="?commentCounts"?>([\d,\.]+)</span>',
             webpage, 'comment count', fatal=False))
 
-        m = re.search(r'_(?P<width>\d+)X(?P<height>\d+)\.mp4$', video_url)
-        if m:
+        if m := re.search(r'_(?P<width>\d+)X(?P<height>\d+)\.mp4$', video_url):
             width = int(m.group('width'))
             height = int(m.group('height'))
         else:

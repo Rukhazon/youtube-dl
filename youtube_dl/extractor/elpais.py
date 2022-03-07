@@ -59,11 +59,18 @@ class ElPaisIE(InfoExtractor):
 
         prefix = self._html_search_regex(
             r'var\s+url_cache\s*=\s*"([^"]+)";', webpage, 'URL prefix')
-        id_multimedia = self._search_regex(
-            r"id_multimedia\s*=\s*'([^']+)'", webpage, 'ID multimedia', default=None)
-        if id_multimedia:
+        if id_multimedia := self._search_regex(
+            r"id_multimedia\s*=\s*'([^']+)'",
+            webpage,
+            'ID multimedia',
+            default=None,
+        ):
             url_info = self._download_json(
-                'http://elpais.com/vdpep/1/?pepid=' + id_multimedia, video_id, transform_source=strip_jsonp)
+                f'http://elpais.com/vdpep/1/?pepid={id_multimedia}',
+                video_id,
+                transform_source=strip_jsonp,
+            )
+
             video_suffix = url_info['mp4']
         else:
             video_suffix = self._search_regex(

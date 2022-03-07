@@ -226,7 +226,7 @@ class IsmFD(FragmentFD):
 
         track_written = False
         frag_index = 0
-        for i, segment in enumerate(segments):
+        for segment in segments:
             frag_index += 1
             if frag_index <= ctx['fragment_index']:
                 continue

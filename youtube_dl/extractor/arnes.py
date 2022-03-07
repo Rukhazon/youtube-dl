@@ -60,7 +60,9 @@ class ArnesIE(InfoExtractor):
         video_id = self._match_id(url)
 
         video = self._download_json(
-            self._BASE_URL + '/api/public/video/' + video_id, video_id)['data']
+            f'{self._BASE_URL}/api/public/video/{video_id}', video_id
+        )['data']
+
         title = video['title']
 
         formats = []
@@ -92,10 +94,15 @@ class ArnesIE(InfoExtractor):
             'timestamp': parse_iso8601(video.get('creationTime')),
             'channel': channel.get('name'),
             'channel_id': channel_id,
-            'channel_url': self._BASE_URL + '/?channel=' + channel_id if channel_id else None,
+            'channel_url': f'{self._BASE_URL}/?channel={channel_id}'
+            if channel_id
+            else None,
             'duration': float_or_none(video.get('duration'), 1000),
             'view_count': int_or_none(video.get('views')),
             'tags': video.get('hashtags'),
-            'start_time': int_or_none(compat_parse_qs(
-                compat_urllib_parse_urlparse(url).query).get('t', [None])[0]),
+            'start_time': int_or_none(
+                compat_parse_qs(compat_urllib_parse_urlparse(url).query).get(
+                    't', [None]
+                )[0]
+            ),
         }

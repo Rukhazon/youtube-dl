@@ -200,8 +200,7 @@ class DaumPlaylistIE(DaumListIE):
     def _real_extract(self, url):
         list_id = self._match_id(url)
 
-        clip_result = self._check_clip(url, list_id)
-        if clip_result:
+        if clip_result := self._check_clip(url, list_id):
             return clip_result
 
         name, entries = self._get_entries(list_id, 'playlistid')
@@ -252,8 +251,7 @@ class DaumUserIE(DaumListIE):
     def _real_extract(self, url):
         list_id = self._match_id(url)
 
-        clip_result = self._check_clip(url, list_id)
-        if clip_result:
+        if clip_result := self._check_clip(url, list_id):
             return clip_result
 
         query_dict = compat_parse_qs(compat_urlparse.urlparse(url).query)

@@ -15,8 +15,11 @@ from ..utils import (
 class EggheadBaseIE(InfoExtractor):
     def _call_api(self, path, video_id, resource, fatal=True):
         return self._download_json(
-            'https://app.egghead.io/api/v1/' + path,
-            video_id, 'Downloading %s JSON' % resource, fatal=fatal)
+            f'https://app.egghead.io/api/v1/{path}',
+            video_id,
+            'Downloading %s JSON' % resource,
+            fatal=fatal,
+        )
 
 
 class EggheadCourseIE(EggheadBaseIE):
@@ -38,9 +41,11 @@ class EggheadCourseIE(EggheadBaseIE):
 
     def _real_extract(self, url):
         playlist_id = self._match_id(url)
-        series_path = 'series/' + playlist_id
+        series_path = f'series/{playlist_id}'
         lessons = self._call_api(
-            series_path + '/lessons', playlist_id, 'course lessons')
+            f'{series_path}/lessons', playlist_id, 'course lessons'
+        )
+
 
         entries = []
         for lesson in lessons:
@@ -99,8 +104,7 @@ class EggheadLessonIE(EggheadBaseIE):
     def _real_extract(self, url):
         display_id = self._match_id(url)
 
-        lesson = self._call_api(
-            'lessons/' + display_id, display_id, 'lesson')
+        lesson = self._call_api(f'lessons/{display_id}', display_id, 'lesson')
 
         lesson_id = compat_str(lesson['id'])
         title = lesson['title']

@@ -90,16 +90,14 @@ class CoubIE(InfoExtractor):
                     'preference': preference_key(HTML5),
                 })
 
-        iphone_url = file_versions.get(IPHONE, {}).get('url')
-        if iphone_url:
+        if iphone_url := file_versions.get(IPHONE, {}).get('url'):
             formats.append({
                 'url': iphone_url,
                 'format_id': IPHONE,
                 'preference': preference_key(IPHONE),
             })
 
-        mobile_url = file_versions.get(MOBILE, {}).get('audio_url')
-        if mobile_url:
+        if mobile_url := file_versions.get(MOBILE, {}).get('audio_url'):
             formats.append({
                 'url': mobile_url,
                 'format_id': '%s-audio' % MOBILE,

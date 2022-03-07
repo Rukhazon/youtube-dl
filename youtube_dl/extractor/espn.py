@@ -146,8 +146,7 @@ class ESPNIE(OnceIE):
                     'url': source_url,
                     'format_id': source_id,
                 }
-                mobj = re.search(r'(\d+)p(\d+)_(\d+)k\.', source_url)
-                if mobj:
+                if mobj := re.search(r'(\d+)p(\d+)_(\d+)k\.', source_url):
                     f.update({
                         'height': int(mobj.group(1)),
                         'fps': int(mobj.group(2)),

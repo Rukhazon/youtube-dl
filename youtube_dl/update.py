@@ -183,8 +183,7 @@ def get_notes(versions, fromVersion):
 
 
 def print_notes(to_screen, versions, fromVersion=__version__):
-    notes = get_notes(versions, fromVersion)
-    if notes:
+    if notes := get_notes(versions, fromVersion):
         to_screen('PLEASE NOTE:')
         for note in notes:
             to_screen(note)

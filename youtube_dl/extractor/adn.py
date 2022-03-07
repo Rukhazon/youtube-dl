@@ -78,8 +78,9 @@ class ADNIE(InfoExtractor):
 
         enc_subtitles = self._download_webpage(
             sub_url, video_id, 'Downloading subtitles location', fatal=False) or '{}'
-        subtitle_location = (self._parse_json(enc_subtitles, video_id, fatal=False) or {}).get('location')
-        if subtitle_location:
+        if subtitle_location := (
+            self._parse_json(enc_subtitles, video_id, fatal=False) or {}
+        ).get('location'):
             enc_subtitles = self._download_webpage(
                 subtitle_location, video_id, 'Downloading subtitles data',
                 fatal=False, headers={'Origin': 'https://animedigitalnetwork.fr'})
@@ -87,11 +88,14 @@ class ADNIE(InfoExtractor):
             return None
 
         # http://animedigitalnetwork.fr/components/com_vodvideo/videojs/adn-vjs.min.js
-        dec_subtitles = intlist_to_bytes(aes_cbc_decrypt(
-            bytes_to_intlist(compat_b64decode(enc_subtitles[24:])),
-            bytes_to_intlist(binascii.unhexlify(self._K + 'ab9f52f5baae7c72')),
-            bytes_to_intlist(compat_b64decode(enc_subtitles[:24]))
-        ))
+        dec_subtitles = intlist_to_bytes(
+            aes_cbc_decrypt(
+                bytes_to_intlist(compat_b64decode(enc_subtitles[24:])),
+                bytes_to_intlist(binascii.unhexlify(f'{self._K}ab9f52f5baae7c72')),
+                bytes_to_intlist(compat_b64decode(enc_subtitles[:24])),
+            )
+        )
+
         subtitles_json = self._parse_json(
             dec_subtitles[:-compat_ord(dec_subtitles[-1])].decode(),
             None, fatal=False)
@@ -138,17 +142,25 @@ Format: Marked,Start,End,Style,Name,MarginL,MarginR,MarginV,Effect,Text'''
         if not username:
             return
         try:
-            access_token = (self._download_json(
-                self._API_BASE_URL + 'authentication/login', None,
-                'Logging in', self._LOGIN_ERR_MESSAGE, fatal=False,
-                data=urlencode_postdata({
-                    'password': password,
-                    'rememberMe': False,
-                    'source': 'Web',
-                    'username': username,
-                })) or {}).get('accessToken')
-            if access_token:
-                self._HEADERS = {'authorization': 'Bearer ' + access_token}
+            if access_token := (
+                self._download_json(
+                    f'{self._API_BASE_URL}authentication/login',
+                    None,
+                    'Logging in',
+                    self._LOGIN_ERR_MESSAGE,
+                    fatal=False,
+                    data=urlencode_postdata(
+                        {
+                            'password': password,
+                            'rememberMe': False,
+                            'source': 'Web',
+                            'username': username,
+                        }
+                    ),
+                )
+                or {}
+            ).get('accessToken'):
+                self._HEADERS = {'authorization': f'Bearer {access_token}'}
         except ExtractorError as e:
             message = None
             if isinstance(e.cause, compat_HTTPError) and e.cause.code == 401:
@@ -161,9 +173,12 @@ Format: Marked,Start,End,Style,Name,MarginL,MarginR,MarginV,Effect,Text'''
         video_id = self._match_id(url)
         video_base_url = self._PLAYER_BASE_URL + 'video/%s/' % video_id
         player = self._download_json(
-            video_base_url + 'configuration', video_id,
+            f'{video_base_url}configuration',
+            video_id,
             'Downloading player config JSON metadata',
-            headers=self._HEADERS)['player']
+            headers=self._HEADERS,
+        )['player']
+
         options = player['options']
 
         user = options['user']

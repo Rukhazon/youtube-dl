@@ -82,13 +82,11 @@ class EinthusanIE(InfoExtractor):
 
         formats = []
 
-        m3u8_url = ej_links.get('HLSLink')
-        if m3u8_url:
+        if m3u8_url := ej_links.get('HLSLink'):
             formats.extend(self._extract_m3u8_formats(
                 m3u8_url, video_id, ext='mp4', entry_protocol='m3u8_native'))
 
-        mp4_url = ej_links.get('MP4Link')
-        if mp4_url:
+        if mp4_url := ej_links.get('MP4Link'):
             formats.append({
                 'url': mp4_url,
             })

@@ -86,22 +86,30 @@ class DiscoveryIE(DiscoveryGoBaseIE):
                 })['access_token']
 
         headers = self.geo_verification_headers()
-        headers['Authorization'] = 'Bearer ' + access_token
+        headers['Authorization'] = f'Bearer {access_token}'
 
         try:
             video = self._download_json(
-                self._API_BASE_URL + 'content/videos',
-                display_id, 'Downloading content JSON metadata',
-                headers=headers, query={
+                f'{self._API_BASE_URL}content/videos',
+                display_id,
+                'Downloading content JSON metadata',
+                headers=headers,
+                query={
                     'embed': 'show.name',
                     'fields': 'authenticated,description.detailed,duration,episodeNumber,id,name,parental.rating,season.number,show,tags',
                     'slug': display_id,
                     'show_slug': show_slug,
-                })[0]
+                },
+            )[0]
+
             video_id = video['id']
             stream = self._download_json(
-                self._API_BASE_URL + 'streaming/video/' + video_id,
-                display_id, 'Downloading streaming JSON metadata', headers=headers)
+                f'{self._API_BASE_URL}streaming/video/{video_id}',
+                display_id,
+                'Downloading streaming JSON metadata',
+                headers=headers,
+            )
+
         except ExtractorError as e:
             if isinstance(e.cause, compat_HTTPError) and e.cause.code in (401, 403):
                 e_description = self._parse_json(
