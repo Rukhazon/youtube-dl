@@ -71,7 +71,7 @@ class _AVMClass(object):
         self.method_idxs = {}
         self.methods = {}
         self.method_pyfunctions = {}
-        self.static_properties = static_properties if static_properties else {}
+        self.static_properties = static_properties or {}
 
         self.variables = _ScopeDict(self)
         self.constants = {}
@@ -84,9 +84,7 @@ class _AVMClass(object):
 
     def register_methods(self, methods):
         self.method_names.update(methods.items())
-        self.method_idxs.update(dict(
-            (idx, name)
-            for name, idx in methods.items()))
+        self.method_idxs.update({idx: name for name, idx in methods.items()})
 
 
 class _Multiname(object):
@@ -104,7 +102,7 @@ def _read_int(reader):
         buf = reader.read(1)
         assert len(buf) == 1
         b = compat_struct_unpack('<B', buf)[0]
-        res = res | ((b & 0x7f) << shift)
+        res |= (b & 0x7f) << shift
         if b & 0x80 == 0:
             break
         shift += 7
@@ -150,8 +148,7 @@ def _read_bytes(count, reader):
 
 def _read_byte(reader):
     resb = _read_bytes(1, reader=reader)
-    res = compat_struct_unpack('<B', resb)[0]
-    return res
+    return compat_struct_unpack('<B', resb)[0]
 
 
 StringClass = _AVMClass('(no name idx)', 'String')
@@ -312,9 +309,7 @@ class SWFInterpreter(object):
                 u30()  # Slot id
                 u30()  # type_name_idx
                 vindex = u30()
-                vkind = 'any'
-                if vindex != 0:
-                    vkind = read_byte()
+                vkind = read_byte() if vindex != 0 else 'any'
                 if vkind == 0x03:  # Constant_Int
                     value = self.constant_ints[vindex]
                 elif vkind == 0x04:  # Constant_UInt

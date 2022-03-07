@@ -97,13 +97,13 @@ class DouyuTVIE(InfoExtractor):
         signContent = 'lapi/live/thirdPart/getPlay/%s?aid=pcclient&rate=0&time=%d9TUk5fjjUjg9qIMH3sdnh' % (room_id, tt)
         sign = hashlib.md5(signContent.encode('ascii')).hexdigest()
         video_url = self._download_json(
-            'http://coapi.douyucdn.cn/lapi/live/thirdPart/getPlay/' + room_id,
-            video_id, note='Downloading video URL info',
-            query={'rate': 0}, headers={
-                'auth': sign,
-                'time': str(tt),
-                'aid': 'pcclient'
-            })['data']['live_url']
+            f'http://coapi.douyucdn.cn/lapi/live/thirdPart/getPlay/{room_id}',
+            video_id,
+            note='Downloading video URL info',
+            query={'rate': 0},
+            headers={'auth': sign, 'time': str(tt), 'aid': 'pcclient'},
+        )['data']['live_url']
+
 
         title = self._live_title(unescapeHTML(room['room_name']))
         description = room.get('show_details')
@@ -155,7 +155,7 @@ class DouyuShowIE(InfoExtractor):
 
         video_info = None
 
-        for trial in range(5):
+        for _ in range(5):
             # Sometimes Douyu rejects our request. Let's try it more times
             try:
                 video_info = self._download_json(
@@ -181,12 +181,12 @@ class DouyuShowIE(InfoExtractor):
             'upload date', fatal=False))
 
         uploader = uploader_id = uploader_url = None
-        mobj = re.search(
+        if mobj := re.search(
             r'(?m)<a[^>]+href="/author/([0-9a-zA-Z]+)".+?<strong[^>]+title="([^"]+)"',
-            webpage)
-        if mobj:
+            webpage,
+        ):
             uploader_id, uploader = mobj.groups()
-            uploader_url = urljoin(url, '/author/' + uploader_id)
+            uploader_url = urljoin(url, f'/author/{uploader_id}')
 
         return {
             'id': video_id,

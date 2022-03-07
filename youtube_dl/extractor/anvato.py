@@ -238,9 +238,14 @@ class AnvatoIE(InfoExtractor):
         if self.__server_time is not None:
             return self.__server_time
 
-        self.__server_time = int(self._download_json(
-            self._api_prefix(access_key) + 'server_time?anvack=' + access_key, video_id,
-            note='Fetching server time')['server_time'])
+        self.__server_time = int(
+            self._download_json(
+                f'{self._api_prefix(access_key)}server_time?anvack={access_key}',
+                video_id,
+                note='Fetching server time',
+            )['server_time']
+        )
+
 
         return self.__server_time
 
@@ -261,10 +266,16 @@ class AnvatoIE(InfoExtractor):
         api = {
             'anvrid': anvrid,
             'anvts': server_time,
+            'anvstk': md5_text(
+                '%s|%s|%d|%s'
+                % (
+                    access_key,
+                    anvrid,
+                    server_time,
+                    self._ANVACK_TABLE.get(access_key, self._API_KEY),
+                )
+            ),
         }
-        api['anvstk'] = md5_text('%s|%s|%d|%s' % (
-            access_key, anvrid, server_time,
-            self._ANVACK_TABLE.get(access_key, self._API_KEY)))
 
         return self._download_json(
             video_data_url, video_id, transform_source=strip_jsonp,
@@ -348,8 +359,7 @@ class AnvatoIE(InfoExtractor):
                 continue
             access_key = anvplayer_data.get('accessKey')
             if not access_key:
-                mcp = anvplayer_data.get('mcp')
-                if mcp:
+                if mcp := anvplayer_data.get('mcp'):
                     access_key = AnvatoIE._MCP_TO_ACCESS_KEY_TABLE.get(
                         mcp.lower())
             if not access_key:

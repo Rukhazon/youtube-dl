@@ -50,8 +50,5 @@ class DBTVIE(InfoExtractor):
                 'ie_key': 'Youtube',
             })
         else:
-            info.update({
-                'url': 'jwplatform:' + video_id,
-                'ie_key': 'JWPlatform',
-            })
+            info.update({'url': f'jwplatform:{video_id}', 'ie_key': 'JWPlatform'})
         return info

@@ -18,8 +18,7 @@ class CuriosityStreamBaseIE(InfoExtractor):
     _API_BASE_URL = 'https://api.curiositystream.com/v1/'
 
     def _handle_errors(self, result):
-        error = result.get('error', {}).get('message')
-        if error:
+        if error := result.get('error', {}).get('message'):
             if isinstance(error, dict):
                 error = ', '.join(error.values())
             raise ExtractorError(
@@ -39,10 +38,16 @@ class CuriosityStreamBaseIE(InfoExtractor):
         if email is None:
             return
         result = self._download_json(
-            self._API_BASE_URL + 'login', None, data=urlencode_postdata({
-                'email': email,
-                'password': password,
-            }))
+            f'{self._API_BASE_URL}login',
+            None,
+            data=urlencode_postdata(
+                {
+                    'email': email,
+                    'password': password,
+                }
+            ),
+        )
+
         self._handle_errors(result)
         self._auth_token = result['message']['auth_token']
 
@@ -70,10 +75,10 @@ class CuriosityStreamIE(CuriosityStreamBaseIE):
 
         formats = []
         for encoding_format in ('m3u8', 'mpd'):
-            media = self._call_api('media/' + video_id, video_id, query={
-                'encodingsNew': 'true',
-                'encodingsFormat': encoding_format,
-            })
+            media = self._call_api(f'media/{video_id}', video_id, query={
+                        'encodingsNew': 'true',
+                        'encodingsFormat': encoding_format,
+                    })
             for encoding in media.get('encodings', []):
                 playlist_url = encoding.get('master_playlist_url')
                 if encoding_format == 'm3u8':
@@ -102,8 +107,10 @@ class CuriosityStreamIE(CuriosityStreamBaseIE):
                     if not f_url:
                         continue
                     fmt = f.copy()
-                    rtmp = re.search(r'^(?P<url>rtmpe?://(?P<host>[^/]+)/(?P<app>.+))/(?P<playpath>mp[34]:.+)$', f_url)
-                    if rtmp:
+                    if rtmp := re.search(
+                        r'^(?P<url>rtmpe?://(?P<host>[^/]+)/(?P<app>.+))/(?P<playpath>mp[34]:.+)$',
+                        f_url,
+                    ):
                         fmt.update({
                             'url': rtmp.group('url'),
                             'play_path': rtmp.group('playpath'),
@@ -164,14 +171,18 @@ class CuriosityStreamCollectionIE(CuriosityStreamBaseIE):
 
     def _real_extract(self, url):
         collection_id = self._match_id(url)
-        collection = self._call_api(
-            'collections/' + collection_id, collection_id)
+        collection = self._call_api(f'collections/{collection_id}', collection_id)
         entries = []
         for media in collection.get('media', []):
             media_id = compat_str(media.get('id'))
-            entries.append(self.url_result(
-                'https://curiositystream.com/video/' + media_id,
-                CuriosityStreamIE.ie_key(), media_id))
+            entries.append(
+                self.url_result(
+                    f'https://curiositystream.com/video/{media_id}',
+                    CuriosityStreamIE.ie_key(),
+                    media_id,
+                )
+            )
+
         return self.playlist_result(
             entries, collection_id,
             collection.get('title'), collection.get('description'))

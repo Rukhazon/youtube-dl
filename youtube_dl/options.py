@@ -25,11 +25,7 @@ def _hide_login_info(opts):
     eqre = re.compile('^(?P<key>' + ('|'.join(re.escape(po) for po in PRIVATE_OPTS)) + ')=.+$')
 
     def _scrub_eq(o):
-        m = eqre.match(o)
-        if m:
-            return m.group('key') + '=PRIVATE'
-        else:
-            return o
+        return m.group('key') + '=PRIVATE' if (m := eqre.match(o)) else o
 
     opts = list(map(_scrub_eq, opts))
     for idx, opt in enumerate(opts):
@@ -55,8 +51,7 @@ def parseOpts(overrideArguments=None):
         return res
 
     def _readUserConf():
-        xdg_config_home = compat_getenv('XDG_CONFIG_HOME')
-        if xdg_config_home:
+        if xdg_config_home := compat_getenv('XDG_CONFIG_HOME'):
             userConfFile = os.path.join(xdg_config_home, 'youtube-dl', 'config')
             if not os.path.isfile(userConfFile):
                 userConfFile = os.path.join(xdg_config_home, 'youtube-dl.conf')
@@ -67,8 +62,7 @@ def parseOpts(overrideArguments=None):
         userConf = _readOptions(userConfFile, None)
 
         if userConf is None:
-            appdata_dir = compat_getenv('appdata')
-            if appdata_dir:
+            if appdata_dir := compat_getenv('appdata'):
                 userConf = _readOptions(
                     os.path.join(appdata_dir, 'youtube-dl', 'config'),
                     default=None)

@@ -63,10 +63,10 @@ class DigitekaIE(InfoExtractor):
 
     @staticmethod
     def _extract_url(webpage):
-        mobj = re.search(
+        if mobj := re.search(
             r'<(?:iframe|script)[^>]+src=["\'](?P<url>(?:https?:)?//(?:www\.)?ultimedia\.com/deliver/(?:generic|musique)(?:/[^/]+)*/(?:src|article)/[\d+a-z]+)',
-            webpage)
-        if mobj:
+            webpage,
+        ):
             return mobj.group('url')
 
     def _real_extract(self, url):
@@ -80,19 +80,15 @@ class DigitekaIE(InfoExtractor):
             'http://www.ultimedia.com/deliver/video?video=%s&topic=%s' % (video_id, video_type),
             video_id)
 
-        yt_id = deliver_info.get('yt_id')
-        if yt_id:
+        if yt_id := deliver_info.get('yt_id'):
             return self.url_result(yt_id, 'Youtube')
 
         jwconf = deliver_info['jwconf']
 
-        formats = []
-        for source in jwconf['playlist'][0]['sources']:
-            formats.append({
+        formats = [{
                 'url': source['file'],
                 'format_id': source.get('label'),
-            })
-
+            } for source in jwconf['playlist'][0]['sources']]
         self._sort_formats(formats)
 
         title = deliver_info['title']

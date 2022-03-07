@@ -61,17 +61,23 @@ class DctpTvIE(InfoExtractor):
 
         def add_formats(suffix):
             templ = 'https://%%s/%s_dctp_%s.m4v' % (uuid, suffix)
-            formats.extend([{
-                'format_id': 'hls-' + suffix,
-                'url': templ % 'cdn-segments.dctp.tv' + '/playlist.m3u8',
-                'protocol': 'm3u8_native',
-            }, {
-                'format_id': 's3-' + suffix,
-                'url': templ % 'completed-media.s3.amazonaws.com',
-            }, {
-                'format_id': 'http-' + suffix,
-                'url': templ % 'cdn-media.dctp.tv',
-            }])
+            formats.extend(
+                [
+                    {
+                        'format_id': f'hls-{suffix}',
+                        'url': templ % 'cdn-segments.dctp.tv' + '/playlist.m3u8',
+                        'protocol': 'm3u8_native',
+                    },
+                    {
+                        'format_id': f's3-{suffix}',
+                        'url': templ % 'completed-media.s3.amazonaws.com',
+                    },
+                    {
+                        'format_id': f'http-{suffix}',
+                        'url': templ % 'cdn-media.dctp.tv',
+                    },
+                ]
+            )
 
         add_formats('0500_' + ('16x9' if is_wide else '4x3'))
         if is_wide:

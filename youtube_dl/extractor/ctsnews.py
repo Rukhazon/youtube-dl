@@ -71,12 +71,12 @@ class CtsNewsIE(InfoExtractor):
         title = self._html_search_meta('title', page, fatal=True)
         thumbnail = self._html_search_meta('image', page)
 
-        datetime_str = self._html_search_regex(
-            r'(\d{4}/\d{2}/\d{2} \d{2}:\d{2})', page, 'date and time', fatal=False)
-        timestamp = None
-        if datetime_str:
+        if datetime_str := self._html_search_regex(
+            r'(\d{4}/\d{2}/\d{2} \d{2}:\d{2})', page, 'date and time', fatal=False
+        ):
             timestamp = unified_timestamp(datetime_str) - 8 * 3600
-
+        else:
+            timestamp = None
         return {
             'id': news_id,
             'url': video_url,

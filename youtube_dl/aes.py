@@ -334,16 +334,20 @@ def mix_columns_inv(data):
 def shift_rows(data):
     data_shifted = []
     for column in range(4):
-        for row in range(4):
-            data_shifted.append(data[((column + row) & 0b11) * 4 + row])
+        data_shifted.extend(
+            data[((column + row) & 0b11) * 4 + row] for row in range(4)
+        )
+
     return data_shifted
 
 
 def shift_rows_inv(data):
     data_shifted = []
     for column in range(4):
-        for row in range(4):
-            data_shifted.append(data[((column - row) & 0b11) * 4 + row])
+        data_shifted.extend(
+            data[((column - row) & 0b11) * 4 + row] for row in range(4)
+        )
+
     return data_shifted
 
 

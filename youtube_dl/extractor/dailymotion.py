@@ -32,8 +32,7 @@ class DailymotionBaseInfoExtractor(InfoExtractor):
 
     @staticmethod
     def _get_cookie_value(cookies, name):
-        cookie = cookies.get(name)
-        if cookie:
+        if cookie := cookies.get(name):
             return cookie.value
 
     def _set_dailymotion_cookie(self, name, value):
@@ -74,7 +73,7 @@ class DailymotionBaseInfoExtractor(InfoExtractor):
                             e.cause.read().decode(), xid)['error_description'], expected=True)
                     raise
                 self._set_dailymotion_cookie('access_token' if username else 'client_token', token)
-            self._HEADERS['Authorization'] = 'Bearer ' + token
+            self._HEADERS['Authorization'] = f'Bearer {token}'
 
         resp = self._download_json(
             'https://graphql.api.dailymotion.com/', xid, note, data=json.dumps({
@@ -192,15 +191,22 @@ class DailymotionIE(DailymotionBaseInfoExtractor):
 
     @staticmethod
     def _extract_urls(webpage):
-        urls = []
-        # Look for embedded Dailymotion player
-        # https://developer.dailymotion.com/player#player-parameters
-        for mobj in re.finditer(
-                r'<(?:(?:embed|iframe)[^>]+?src=|input[^>]+id=[\'"]dmcloudUrlEmissionSelect[\'"][^>]+value=)(["\'])(?P<url>(?:https?:)?//(?:www\.)?dailymotion\.com/(?:embed|swf)/video/.+?)\1', webpage):
-            urls.append(unescapeHTML(mobj.group('url')))
-        for mobj in re.finditer(
-                r'(?s)DM\.player\([^,]+,\s*{.*?video[\'"]?\s*:\s*["\']?(?P<id>[0-9a-zA-Z]+).+?}\s*\);', webpage):
-            urls.append('https://www.dailymotion.com/embed/video/' + mobj.group('id'))
+        urls = [
+            unescapeHTML(mobj.group('url'))
+            for mobj in re.finditer(
+                r'<(?:(?:embed|iframe)[^>]+?src=|input[^>]+id=[\'"]dmcloudUrlEmissionSelect[\'"][^>]+value=)(["\'])(?P<url>(?:https?:)?//(?:www\.)?dailymotion\.com/(?:embed|swf)/video/.+?)\1',
+                webpage,
+            )
+        ]
+
+        urls.extend(
+            'https://www.dailymotion.com/embed/video/' + mobj.group('id')
+            for mobj in re.finditer(
+                r'(?s)DM\.player\([^,]+,\s*{.*?video[\'"]?\s*:\s*["\']?(?P<id>[0-9a-zA-Z]+).+?}\s*\);',
+                webpage,
+            )
+        )
+
         return urls
 
     def _real_extract(self, url):
@@ -210,8 +216,11 @@ class DailymotionIE(DailymotionBaseInfoExtractor):
             if not self._downloader.params.get('noplaylist'):
                 self.to_screen('Downloading playlist %s - add --no-playlist to just download video' % playlist_id)
                 return self.url_result(
-                    'http://www.dailymotion.com/playlist/' + playlist_id,
-                    'DailymotionPlaylist', playlist_id)
+                    f'http://www.dailymotion.com/playlist/{playlist_id}',
+                    'DailymotionPlaylist',
+                    playlist_id,
+                )
+
             self.to_screen('Downloading just video %s because of --no-playlist' % video_id)
 
         password = self._downloader.params.get('videopassword')
@@ -236,12 +245,14 @@ class DailymotionIE(DailymotionBaseInfoExtractor):
         xid = media['xid']
 
         metadata = self._download_json(
-            'https://www.dailymotion.com/player/metadata/video/' + xid,
-            xid, 'Downloading metadata JSON',
-            query={'app': 'com.dailymotion.neon'})
+            f'https://www.dailymotion.com/player/metadata/video/{xid}',
+            xid,
+            'Downloading metadata JSON',
+            query={'app': 'com.dailymotion.neon'},
+        )
 
-        error = metadata.get('error')
-        if error:
+
+        if error := metadata.get('error'):
             title = error.get('title') or error['raw_message']
             # See https://developer.dailymotion.com/api#access-error
             if error.get('code') == 'DM007':
@@ -265,12 +276,8 @@ class DailymotionIE(DailymotionBaseInfoExtractor):
                         'm3u8' if is_live else 'm3u8_native',
                         m3u8_id='hls', fatal=False))
                 else:
-                    f = {
-                        'url': media_url,
-                        'format_id': 'http-' + quality,
-                    }
-                    m = re.search(r'/H264-(\d+)x(\d+)(?:-(60)/)?', media_url)
-                    if m:
+                    f = {'url': media_url, 'format_id': f'http-{quality}'}
+                    if m := re.search(r'/H264-(\d+)x(\d+)(?:-(60)/)?', media_url):
                         width, height, fps = map(int_or_none, m.groups())
                         f.update({
                             'fps': fps,
@@ -284,24 +291,28 @@ class DailymotionIE(DailymotionBaseInfoExtractor):
                 f['fps'] = 60
         self._sort_formats(formats)
 
-        subtitles = {}
         subtitles_data = try_get(metadata, lambda x: x['subtitles']['data'], dict) or {}
-        for subtitle_lang, subtitle in subtitles_data.items():
-            subtitles[subtitle_lang] = [{
-                'url': subtitle_url,
-            } for subtitle_url in subtitle.get('urls', [])]
+        subtitles = {
+            subtitle_lang: [
+                {
+                    'url': subtitle_url,
+                }
+                for subtitle_url in subtitle.get('urls', [])
+            ]
+            for subtitle_lang, subtitle in subtitles_data.items()
+        }
 
-        thumbnails = []
-        for height, poster_url in metadata.get('posters', {}).items():
-            thumbnails.append({
+        thumbnails = [{
                 'height': int_or_none(height),
                 'id': height,
                 'url': poster_url,
-            })
-
+            } for height, poster_url in metadata.get('posters', {}).items()]
         owner = metadata.get('owner') or {}
         stats = media.get('stats') or {}
-        get_count = lambda x: int_or_none(try_get(stats, lambda y: y[x + 's']['total']))
+        get_count = lambda x: int_or_none(
+            try_get(stats, lambda y: y[f'{x}s']['total'])
+        )
+
 
         return {
             'id': video_id,

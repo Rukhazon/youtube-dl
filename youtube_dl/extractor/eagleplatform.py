@@ -131,8 +131,7 @@ class EaglePlatformIE(InfoExtractor):
             'id': video_id,
         }
 
-        referrer = smuggled_data.get('referrer')
-        if referrer:
+        if referrer := smuggled_data.get('referrer'):
             headers['Referer'] = referrer
             query['referrer'] = referrer
 
@@ -148,11 +147,10 @@ class EaglePlatformIE(InfoExtractor):
         duration = int_or_none(media.get('duration'))
         view_count = int_or_none(media.get('views'))
 
-        age_restriction = media.get('age_restriction')
-        age_limit = None
-        if age_restriction:
+        if age_restriction := media.get('age_restriction'):
             age_limit = 0 if age_restriction == 'allow_all' else 18
-
+        else:
+            age_limit = None
         secure_m3u8 = self._proto_relative_url(media['sources']['secure_m3u8']['auto'], 'http:')
 
         formats = []
@@ -163,17 +161,18 @@ class EaglePlatformIE(InfoExtractor):
             m3u8_id='hls', fatal=False)
         formats.extend(m3u8_formats)
 
-        m3u8_formats_dict = {}
-        for f in m3u8_formats:
-            if f.get('height') is not None:
-                m3u8_formats_dict[f['height']] = f
+        m3u8_formats_dict = {
+            f['height']: f for f in m3u8_formats if f.get('height') is not None
+        }
 
-        mp4_data = self._download_json(
+        if mp4_data := self._download_json(
             # Secure mp4 URL is constructed according to Player.prototype.mp4 from
             # http://lentaru.media.eagleplatform.com/player/player.js
             re.sub(r'm3u8|hlsvod|hls|f4m', 'mp4s', secure_m3u8),
-            video_id, 'Downloading mp4 JSON', fatal=False)
-        if mp4_data:
+            video_id,
+            'Downloading mp4 JSON',
+            fatal=False,
+        ):
             for format_id, format_url in mp4_data.get('data', {}).items():
                 if not url_or_none(format_url):
                     continue

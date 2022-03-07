@@ -135,10 +135,18 @@ class CPACPlaylistIE(InfoExtractor):
                     note='Downloading continuation - %d' % (page, ),
                     fatal=False)
 
-            for item in try_get(content, lambda x: x['page'][list_type]['item'], list) or []:
-                episode_url = urljoin(url, try_get(item, lambda x: x['url_%s_s' % (url_lang, )]))
-                if episode_url:
-                    entries.append(episode_url)
+            entries.extend(
+                episode_url
+                for item in try_get(
+                    content, lambda x: x['page'][list_type]['item'], list
+                )
+                or []
+                if (
+                    episode_url := urljoin(
+                        url, try_get(item, lambda x: x['url_%s_s' % (url_lang,)])
+                    )
+                )
+            )
 
         return self.playlist_result(
             (self.url_result(entry) for entry in entries),

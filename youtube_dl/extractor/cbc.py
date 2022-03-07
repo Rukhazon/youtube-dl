@@ -119,15 +119,17 @@ class CBCIE(InfoExtractor):
         media_id = player_info.get('mediaId')
         if not media_id:
             clip_id = player_info['clipId']
-            feed = self._download_json(
-                'http://tpfeed.cbc.ca/f/ExhSPC/vms_5akSXx4Ng_Zn?byCustomValue={:mpsReleases}{%s}' % clip_id,
-                clip_id, fatal=False)
-            if feed:
+            if feed := self._download_json(
+                'http://tpfeed.cbc.ca/f/ExhSPC/vms_5akSXx4Ng_Zn?byCustomValue={:mpsReleases}{%s}'
+                % clip_id,
+                clip_id,
+                fatal=False,
+            ):
                 media_id = try_get(feed, lambda x: x['entries'][0]['guid'], compat_str)
-            if not media_id:
-                media_id = self._download_json(
-                    'http://feed.theplatform.com/f/h9dtGB/punlNGjMlc1F?fields=id&byContent=byReleases%3DbyId%253D' + clip_id,
-                    clip_id)['entries'][0]['id'].split('/')[-1]
+        if not media_id:
+            media_id = self._download_json(
+                'http://feed.theplatform.com/f/h9dtGB/punlNGjMlc1F?fields=id&byContent=byReleases%3DbyId%253D' + clip_id,
+                clip_id)['entries'][0]['id'].split('/')[-1]
         return self.url_result('cbcplayer:%s' % media_id, 'CBCPlayer', media_id)
 
     def _real_extract(self, url):
@@ -256,8 +258,9 @@ class CBCWatchBaseIE(InfoExtractor):
                     self._register_device()
                     continue
                 raise
-        error_message = xpath_text(result, 'userMessage') or xpath_text(result, 'systemMessage')
-        if error_message:
+        if error_message := xpath_text(result, 'userMessage') or xpath_text(
+            result, 'systemMessage'
+        ):
             raise ExtractorError('%s said: %s' % (self.IE_NAME, error_message))
         return result
 
@@ -280,16 +283,19 @@ class CBCWatchBaseIE(InfoExtractor):
 
     def _register_device(self):
         result = self._download_xml(
-            self._API_BASE_URL + 'device/register',
-            None, 'Acquiring device token',
-            data=b'<device><type>web</type></device>')
+            f'{self._API_BASE_URL}device/register',
+            None,
+            'Acquiring device token',
+            data=b'<device><type>web</type></device>',
+        )
+
         self._device_id = xpath_text(result, 'deviceId', fatal=True)
         email, password = self._get_login_info()
         if email and password:
             signature = self._signature(email, password)
             data = '<login><token>{0}</token><device><deviceId>{1}</deviceId><type>web</type></device></login>'.format(
                 escape(signature), escape(self._device_id)).encode()
-            url = self._API_BASE_URL + 'device/login'
+            url = f'{self._API_BASE_URL}device/login'
             result = self._download_xml(
                 url, None, data=data,
                 headers={'content-type': 'application/xml'})
@@ -389,8 +395,7 @@ class CBCWatchVideoIE(CBCWatchBaseIE):
             'formats': formats,
         }
 
-        rss = xpath_element(result, 'rss')
-        if rss:
+        if rss := xpath_element(result, 'rss'):
             info.update(self._parse_rss_feed(rss)['entries'][0])
             del info['url']
             del info['_type']
@@ -433,7 +438,7 @@ class CBCWatchIE(CBCWatchBaseIE):
 
     def _real_extract(self, url):
         video_id = self._match_id(url)
-        rss = self._call_api('web/browse/' + video_id, video_id)
+        rss = self._call_api(f'web/browse/{video_id}', video_id)
         return self._parse_rss_feed(rss)
 
 

@@ -36,16 +36,15 @@ class EsriVideoIE(InfoExtractor):
         formats = []
         for width, height, content in re.findall(
                 r'(?s)<li><strong>(\d+)x(\d+):</strong>(.+?)</li>', webpage):
-            for video_url, ext, filesize in re.findall(
-                    r'<a[^>]+href="([^"]+)">([^<]+)&nbsp;\(([^<]+)\)</a>', content):
-                formats.append({
+            formats.extend({
                     'url': compat_urlparse.urljoin(url, video_url),
                     'ext': ext.lower(),
                     'format_id': '%s-%s' % (ext.lower(), height),
                     'width': int(width),
                     'height': int(height),
                     'filesize_approx': parse_filesize(filesize),
-                })
+                } for video_url, ext, filesize in re.findall(
+                    r'<a[^>]+href="([^"]+)">([^<]+)&nbsp;\(([^<]+)\)</a>', content))
         self._sort_formats(formats)
 
         title = self._html_search_meta('title', webpage, 'title')

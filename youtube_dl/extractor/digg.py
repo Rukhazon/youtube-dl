@@ -41,9 +41,7 @@ class DiggIE(InfoExtractor):
                 default='{}'), display_id, transform_source=js_to_json,
             fatal=False)
 
-        video_id = info.get('video_id')
-
-        if video_id:
+        if video_id := info.get('video_id'):
             provider = info.get('provider_name')
             if provider == 'youtube':
                 return self.url_result(

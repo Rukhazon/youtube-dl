@@ -143,15 +143,15 @@ class CDAIE(InfoExtractor):
             b = []
             for c in a:
                 f = compat_ord(c)
-                b.append(compat_chr(33 + (f + 14) % 94) if 33 <= f and 126 >= f else compat_chr(f))
+                b.append(compat_chr(33 + (f + 14) % 94) if 33 <= f <= 126 else compat_chr(f))
             a = ''.join(b)
             a = a.replace('.cda.mp4', '')
             for p in ('.2cda.pl', '.3cda.pl'):
                 a = a.replace(p, '.cda.pl')
             if '/upstream' in a:
                 a = a.replace('/upstream', '.mp4/upstream')
-                return 'https://' + a
-            return 'https://' + a + '.mp4'
+                return f'https://{a}'
+            return f'https://{a}.mp4'
 
         def extract_format(page, version):
             json_str = self._html_search_regex(
@@ -176,10 +176,10 @@ class CDAIE(InfoExtractor):
             f = {
                 'url': video['file'],
             }
-            m = re.search(
+            if m := re.search(
                 r'<a[^>]+data-quality="(?P<format_id>[^"]+)"[^>]+href="[^"]+"[^>]+class="[^"]*quality-btn-active[^"]*">(?P<height>[0-9]+)p',
-                page)
-            if m:
+                page,
+            ):
                 f.update({
                     'format_id': m.group('format_id'),
                     'height': int(m.group('height')),
